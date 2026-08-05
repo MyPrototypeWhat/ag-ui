@@ -69,4 +69,12 @@ jobs:
             git commit --no-edit
           fi
 
+          # GITHUB_TOKEN cannot push changes under .github/workflows. Strip
+          # those changes from the merge commit (restore the branch's previous
+          # versions); they are re-applied afterwards via the GitHub API.
+          git rm -r -f -q --ignore-unmatch .github/workflows
+          git checkout ORIG_HEAD -- .github/workflows
+          git add .github/workflows
+          git commit --amend --no-edit
+
           git push origin feat/vercel-ai-sdk-v6
