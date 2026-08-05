@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+env:
+  GIT_LFS_SKIP_SMUDGE: "1"
+
 jobs:
   merge:
     runs-on: ubuntu-latest
@@ -27,6 +30,13 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # LFS objects are not hydrated in this checkout; keep pointers as-is
+          # and normalize the worktree so merge doesn't see phantom changes.
+          git lfs install --local --skip-smudge || true
+          git reset --hard HEAD
+          git status --short
+
           git remote add upstream https://github.com/ag-ui-protocol/ag-ui
           git fetch upstream main
 
@@ -37,8 +47,9 @@ jobs:
             echo "Conflicting files:"
             echo "$conflicts"
             if [ "$conflicts" != "apps/dojo/src/files.json" ]; then
-              echo "Unexpected conflicts beyond generated files.json — aborting."
-              git merge --abort
+              echo "Unexpected merge failure or conflicts beyond generated files.json — aborting."
+              git status
+              git merge --abort || true
               exit 1
             fi
             # files.json is generated from the repo contents; regenerate it
