@@ -31,11 +31,21 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # LFS objects are not hydrated in this checkout; keep pointers as-is
-          # and normalize the worktree so merge doesn't see phantom changes.
-          git lfs install --local --skip-smudge || true
-          git reset --hard HEAD
-          git status --short
+          # Neutralize the LFS filter entirely: we merge pointer text as plain
+          # files and never need the hydrated binaries. This prevents phantom
+          # "modified" LFS files from blocking the merge.
+          git config filter.lfs.smudge cat
+          git config filter.lfs.clean cat
+          git config filter.lfs.process ""
+          git config filter.lfs.required false
+          git checkout-index -f -a
+          git update-index --refresh || true
+
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Worktree still dirty after normalization:"
+            git status
+            exit 1
+          fi
 
           git remote add upstream https://github.com/ag-ui-protocol/ag-ui
           git fetch upstream main
