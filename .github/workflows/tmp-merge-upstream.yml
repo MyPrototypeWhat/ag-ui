@@ -1,6 +1,9 @@
 name: Merge upstream main into vercel-ai-sdk-v6
 
 on:
+  push:
+    branches:
+      - claude/tmp-merge-upstream-workflow
   workflow_dispatch: {}
 
 permissions:
